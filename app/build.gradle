@@ -4,6 +4,7 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'com.google.dagger.hilt.android'
+    id 'org.jlleitschuh.gradle.ktlint' version '11.0.0'
 }
 
 android {
@@ -51,6 +52,17 @@ android {
     // Allow references to generated code
     kapt {
         correctErrorTypes = true
+    }
+}
+
+ktlint {
+    android = true
+    ignoreFailures = false
+    disabledRules = ["final-newline","no-wildcard-imports"]
+    reporters {
+        reporter "plain"
+        reporter "checkstyle"
+        reporter "sarif"
     }
 }
 
