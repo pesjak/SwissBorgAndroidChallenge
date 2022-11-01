@@ -2,7 +2,10 @@ package com.primoz.swissborgandroidchallenge.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple200 = Color(0xFFBB86FC)
-val Purple500 = Color(0xFF6200EE)
-val Purple700 = Color(0xFF3700B3)
-val Teal200 = Color(0xFF03DAC5)
+val Teal200 = Color(0xFF3DDFBC)
+val Teal500 = Color(0xFF0DD8AC)
+val Teal700 = Color(0xFF099778)
+
+val Purple200 = Color(0xFF834BFF)
+val Purple500 = Color(0xFF651FFF)
+val Purple700 = Color(0xFF4615B2)
