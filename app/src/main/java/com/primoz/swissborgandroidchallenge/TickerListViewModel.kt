@@ -57,15 +57,19 @@ class TickerListViewModel @Inject constructor(
         shouldUpdateTickers = false
     }
 
+    fun refreshTickers() {
+        loadTickers(shouldResetState = false, shouldRefresh = true)
+    }
+
     fun loadTickers(
         shouldResetState: Boolean = true,
-        shouldRefresh:Boolean = false,
+        shouldRefresh: Boolean = false,
     ) {
         if (shouldResetState) {
             _tickerListState.value = Response.Loading
         }
 
-        if(shouldRefresh){
+        if (shouldRefresh) {
             _isRefreshing.value = true
         }
 
@@ -82,7 +86,7 @@ class TickerListViewModel @Inject constructor(
                     _isRefreshing.value = false
                     val currentState = tickerListState.value
                     _tickerListState.value = Response.Error(
-                        data = (currentState as? Response.Success)?.data,
+                        data = (currentState as? Response.Success)?.data ?: (currentState as? Response.Error)?.data,
                         message = it.message ?: "Something went wrong"
                     )
                 }

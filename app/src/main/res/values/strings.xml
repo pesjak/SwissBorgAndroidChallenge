@@ -3,6 +3,7 @@
     <string name="search_item_hint">Search here</string>
     <string name="error_something_went_wrong">Something went wrong</string>
     <string name="error_try_again">Try again</string>
+    <string name="error_could_not_retrieve_coins">Couldn\'t retrieve latest coins</string>
     <string name="last_updated_now">Last updated: just now</string>
     <string name="last_updated_seconds">Last updated: %d seconds ago</string>
 </resources>

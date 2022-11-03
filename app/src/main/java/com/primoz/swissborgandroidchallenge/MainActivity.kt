@@ -83,9 +83,13 @@ class MainActivity : ComponentActivity() {
                             else -> {
                                 val items = if (state is Response.Success) state.data else (state as Response.Error).data
 
-                                LaunchedEffect(state) {
-                                    if (state is Response.Error) {
-                                        Toast.makeText(context, "Couldn't retrieve latest coins", Toast.LENGTH_SHORT).show()
+                                if (state is Response.Error) {
+                                    LaunchedEffect(state.key) { // Key to trigger next time error shows
+                                        Toast.makeText(
+                                            context,
+                                            getString(R.string.error_could_not_retrieve_coins),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     }
                                 }
 
@@ -104,7 +108,7 @@ class MainActivity : ComponentActivity() {
                                         enableRefreshing = state is Response.Error,
                                         refreshingState = refreshingState,
                                         onRefreshItems = {
-                                            viewModel.loadTickers(shouldResetState = false, shouldRefresh = true)
+                                            viewModel.refreshTickers()
                                         }
                                     )
                                 }
