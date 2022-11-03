@@ -11,10 +11,11 @@ class BitFinexClient @Inject constructor(
     ) = kotlin.runCatching {
         val exampleSymbols = "tBTCUSD,tETHUSD,tCHSB:USD,tLTCUSD,tXRPUSD,tEOSUSD,tSANUSD,tDATUSD,tSNTUSD,tDOGE:USD"
         bitFinexAPI.getTickers(exampleSymbols).map {
+            val data = it.asJsonArray
             Ticker(
-                unformattedSymbol = it.asJsonArray[0].asString,
-                dailyChangeRelative = it.asJsonArray[9].asFloat,
-                lastPrice = it.asJsonArray[10].asFloat,
+                unformattedSymbol = data[0].asString,
+                dailyChangeRelative = data[6].asFloat * 100,
+                lastPrice = data[7].asFloat,
             )
         }
     }

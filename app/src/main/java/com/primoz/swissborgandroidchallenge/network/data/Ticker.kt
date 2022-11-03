@@ -1,12 +1,19 @@
 package com.primoz.swissborgandroidchallenge.network.data
 
 import com.primoz.swissborgandroidchallenge.R
+import java.util.*
 
 data class Ticker(
     private val unformattedSymbol: String,
     val dailyChangeRelative: Float,
     val lastPrice: Float,
 ) {
+    val formattedLastPrice: String = "$%,.2f".format(Locale.ENGLISH, lastPrice)
+    val formattedDailyChangePercentage: String = "${if (dailyChangeRelative > 0) "+" else ""}%,.2f%%".format(
+      Locale.ENGLISH,
+      dailyChangeRelative
+  )
+
     val symbol: String = unformattedSymbol
         .removePrefix("t")
         .replace(":", "")

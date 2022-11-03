@@ -24,9 +24,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.primoz.swissborgandroidchallenge.composables.SearchComposable
 import com.primoz.swissborgandroidchallenge.network.Response
-import com.primoz.swissborgandroidchallenge.ui.theme.Purple700
+import com.primoz.swissborgandroidchallenge.ui.theme.Green
+import com.primoz.swissborgandroidchallenge.ui.theme.Red
 import com.primoz.swissborgandroidchallenge.ui.theme.SwissBorgAndroidChallengeTheme
-import com.primoz.swissborgandroidchallenge.ui.theme.Teal700
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -42,16 +42,15 @@ class MainActivity : ComponentActivity() {
 
                 Scaffold(
                     modifier = Modifier
-                        .background(MaterialTheme.colors.background)
-                        .padding(8.dp),
+                        .background(MaterialTheme.colors.background),
                 ) { contentPadding ->
                     Column(
                         modifier = Modifier
                             .padding(contentPadding)
-                            .padding(horizontal = 8.dp)
                     ) {
                         // Search
                         SearchComposable(
+                            modifier = Modifier.padding(top = 16.dp, start = 16.dp, end = 16.dp),
                             text = searchQuery,
                             onTextChange = {
                                 //  viewModel.updateSearchQuery(it)
@@ -76,7 +75,7 @@ class MainActivity : ComponentActivity() {
                                 // Ticker List
                                 LazyColumn(
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                                    contentPadding = PaddingValues(bottom = 16.dp)
+                                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp, top = 8.dp)
                                 ) {
                                     itemsIndexed(state.data) { index, ticker ->
                                         Card(
@@ -125,13 +124,13 @@ class MainActivity : ComponentActivity() {
                                                     horizontalAlignment = Alignment.End
                                                 ) {
                                                     Text(
-                                                        text = String.format("$%.4f", ticker.lastPrice),
+                                                        text = ticker.formattedLastPrice,
                                                         style = MaterialTheme.typography.subtitle1
                                                     )
                                                     Text(
                                                         style = MaterialTheme.typography.subtitle2,
-                                                        text = String.format("%.2f%%", ticker.dailyChangeRelative),
-                                                        color = if (ticker.dailyChangeRelative > 0) Teal700 else Purple700
+                                                        text = ticker.formattedDailyChangePercentage,
+                                                        color = if (ticker.dailyChangeRelative > 0) Green else Red
                                                     )
                                                 }
                                             }
