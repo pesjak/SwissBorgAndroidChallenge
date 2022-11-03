@@ -14,8 +14,11 @@ class BitFinexClient @Inject constructor(
             val data = it.asJsonArray
             Ticker(
                 unformattedSymbol = data[0].asString,
-                dailyChangeRelative = data[6].asFloat * 100,
+                dailyChangePercentage = data[6].asFloat * 100,
                 lastPrice = data[7].asFloat,
+                volume = data[8].asFloat,
+                high = data[9].asFloat,
+                low = data[10].asFloat,
             )
         }
     }

@@ -5,14 +5,17 @@ import java.util.*
 
 data class Ticker(
     private val unformattedSymbol: String,
-    val dailyChangeRelative: Float,
+    val dailyChangePercentage: Float,
     val lastPrice: Float,
+    val volume: Float,
+    val high: Float,
+    val low: Float,
 ) {
     val formattedLastPrice: String = "$%,.2f".format(Locale.ENGLISH, lastPrice)
-    val formattedDailyChangePercentage: String = "${if (dailyChangeRelative > 0) "+" else ""}%,.2f%%".format(
-      Locale.ENGLISH,
-      dailyChangeRelative
-  )
+    val formattedDailyChangePercentage: String = "${if (dailyChangePercentage > 0) "+" else ""}%,.2f%%".format(
+        Locale.ENGLISH,
+        dailyChangePercentage
+    )
 
     val symbol: String = unformattedSymbol
         .removePrefix("t")

@@ -181,7 +181,7 @@ private fun TickerList(
     ) {
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp, top = 8.dp)
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 8.dp)
         ) {
             items(items) { ticker ->
                 Card(
@@ -236,14 +236,14 @@ private fun TickerList(
                             Text(
                                 style = MaterialTheme.typography.subtitle2,
                                 text = ticker.formattedDailyChangePercentage,
-                                color = if (ticker.dailyChangeRelative > 0) Green else Red
+                                color = if (ticker.dailyChangePercentage > 0) Green else Red
                             )
                         }
                     }
                 }
             }
             item {
-                Spacer(modifier = Modifier.padding(bottom = 16.dp))
+                Spacer(modifier = Modifier.padding(top = 16.dp))
                 Text(
                     modifier = Modifier
                         .fillMaxWidth()
