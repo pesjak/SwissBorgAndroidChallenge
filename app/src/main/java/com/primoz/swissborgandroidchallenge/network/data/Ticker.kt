@@ -25,7 +25,7 @@ data class Ticker(
                 "tBTCUSD" -> "Bitcoin"
                 "tETHUSD" -> "Ethereum"
                 "tCHSB:USD" -> "SwissBorg"
-                "tLTCUSD" -> "LiteCoin"
+                "tLTCUSD" -> "Litecoin"
                 "tXRPUSD" -> "Ripple"
                 "tEOSUSD" -> "EOS"
                 "tSANUSD" -> "Santiment"
