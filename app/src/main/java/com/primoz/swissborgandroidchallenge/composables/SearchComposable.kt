@@ -3,6 +3,7 @@ package com.primoz.swissborgandroidchallenge.composables
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -14,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -27,6 +29,8 @@ fun SearchComposable(
     text: String = "",
     onTextChange: (String) -> Unit = {},
 ) {
+    val focusManager = LocalFocusManager.current
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -74,6 +78,11 @@ fun SearchComposable(
             keyboardOptions = KeyboardOptions(
                 imeAction = ImeAction.Search,
                 capitalization = KeyboardCapitalization.Sentences
+            ),
+            keyboardActions = KeyboardActions(
+                onSearch = {
+                    focusManager.clearFocus()
+                }
             ),
             singleLine = true,
             colors = TextFieldDefaults.textFieldColors(
