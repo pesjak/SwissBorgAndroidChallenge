@@ -24,6 +24,9 @@ class TickerListViewModel @Inject constructor(
     private val _secondsFromLastUpdate = mutableStateOf(0)
     val secondsFromLastUpdate get() = _secondsFromLastUpdate
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing get() = _isRefreshing
+
     private val _tickerListState = MutableStateFlow<Response<List<Ticker>>>(Response.Loading)
     val tickerListState get() = _tickerListState
 
@@ -56,18 +59,27 @@ class TickerListViewModel @Inject constructor(
 
     fun loadTickers(
         shouldResetState: Boolean = true,
+        shouldRefresh:Boolean = false,
     ) {
-        if (shouldResetState) _tickerListState.value = Response.Loading
+        if (shouldResetState) {
+            _tickerListState.value = Response.Loading
+        }
+
+        if(shouldRefresh){
+            _isRefreshing.value = true
+        }
 
         viewModelScope.launch {
             client.getTickers(searchQuery.value)
                 .onSuccess {
                     _secondsFromLastUpdate.value = 0
                     shouldUpdateTickers = true
+                    _isRefreshing.value = false
                     _tickerListState.value = Response.Success(it)
                 }
                 .onFailure {
                     shouldUpdateTickers = false
+                    _isRefreshing.value = false
                     val currentState = tickerListState.value
                     _tickerListState.value = Response.Error(
                         data = (currentState as? Response.Success)?.data,

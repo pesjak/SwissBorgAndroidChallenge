@@ -28,6 +28,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.SwipeRefreshState
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.primoz.swissborgandroidchallenge.composables.SearchComposable
 import com.primoz.swissborgandroidchallenge.network.Response
 import com.primoz.swissborgandroidchallenge.network.data.Ticker
@@ -49,6 +52,8 @@ class MainActivity : ComponentActivity() {
                 val searchQuery by viewModel.searchQuery
                 val secondsFromLastUpdate by viewModel.secondsFromLastUpdate
                 val tickerListState by viewModel.tickerListState.collectAsState()
+                val isRefreshing by viewModel.isRefreshing.collectAsState()
+                val refreshingState = rememberSwipeRefreshState(isRefreshing)
 
                 Scaffold(
                     modifier = Modifier
@@ -67,14 +72,24 @@ class MainActivity : ComponentActivity() {
                             },
                         )
 
+
                         when (val state = tickerListState) {
-                            is Response.Error -> {
-                                // TODO Notify user about error issue
+                            is Response.Loading -> {
+                                LoadingScreen(
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+
+                            else -> {
+                                val items = if (state is Response.Success) state.data else (state as Response.Error).data
+
                                 LaunchedEffect(state) {
-                                    Toast.makeText(context, "Couldn't retrieve latest coins", Toast.LENGTH_SHORT).show()
+                                    if (state is Response.Error) {
+                                        Toast.makeText(context, "Couldn't retrieve latest coins", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
+
                                 // Ticker List
-                                val items = state.data
                                 if (items == null) {
                                     ErrorScreen(
                                         modifier = Modifier.fillMaxSize(),
@@ -83,16 +98,16 @@ class MainActivity : ComponentActivity() {
                                         }
                                     )
                                 } else {
-                                    TickerList(items, secondsFromLastUpdate)
+                                    TickerList(
+                                        items = items,
+                                        secondsFromLastUpdate = secondsFromLastUpdate,
+                                        enableRefreshing = state is Response.Error,
+                                        refreshingState = refreshingState,
+                                        onRefreshItems = {
+                                            viewModel.loadTickers(shouldResetState = false, shouldRefresh = true)
+                                        }
+                                    )
                                 }
-                            }
-                            Response.Loading -> {
-                                LoadingScreen(
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            }
-                            is Response.Success -> {
-                                TickerList(state.data, secondsFromLastUpdate)
                             }
                         }
                     }
@@ -147,88 +162,99 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun TickerList(
-    items: List<Ticker>,
-    secondsFromLastUpdate: Int
+    items: List<Ticker> = listOf(),
+    secondsFromLastUpdate: Int = 0,
+    enableRefreshing: Boolean,
+    onRefreshItems: () -> Unit = {},
+    refreshingState: SwipeRefreshState,
 ) {
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp, top = 8.dp)
+    SwipeRefresh(
+        state = refreshingState,
+        swipeEnabled = enableRefreshing,
+        onRefresh = {
+            onRefreshItems()
+        }
     ) {
-        items(items) { ticker ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(
-                        border = BorderStroke(1.dp, Color.Black.copy(0.12f)),
-                        shape = MaterialTheme.shapes.medium
-                    ),
-                elevation = 0.dp,
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Row(
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp, top = 8.dp)
+        ) {
+            items(items) { ticker ->
+                Card(
                     modifier = Modifier
-                        .clickable { // Clickable inside row and not card because ripple isn't clipped and we don't want "Experimental"
-                            // TODO maybe expand/collapse
-                        }
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp, horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .border(
+                            border = BorderStroke(1.dp, Color.Black.copy(0.12f)),
+                            shape = MaterialTheme.shapes.medium
+                        ),
+                    elevation = 0.dp,
+                    shape = MaterialTheme.shapes.medium
                 ) {
-                    Icon(
-                        painter = painterResource(id = ticker.icon),
-                        contentDescription = "Icon",
-                        tint = Color.Unspecified,
+                    Row(
                         modifier = Modifier
-                            .size(32.dp)
-                    )
-                    Column(modifier = Modifier.padding(start = 16.dp)) {
-                        Text(
-                            modifier = Modifier,
-                            text = ticker.name,
-                            style = MaterialTheme.typography.subtitle1
-                        )
-
-                        Text(
-                            modifier = Modifier,
-                            text = ticker.symbol,
-                            style = MaterialTheme.typography.caption
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    Column(
-                        horizontalAlignment = Alignment.End
+                            .clickable { // Clickable inside row and not card because ripple isn't clipped and we don't want "Experimental"
+                                // TODO maybe expand/collapse
+                            }
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp, horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = ticker.formattedLastPrice,
-                            style = MaterialTheme.typography.subtitle1
+                        Icon(
+                            painter = painterResource(id = ticker.icon),
+                            contentDescription = "Icon",
+                            tint = Color.Unspecified,
+                            modifier = Modifier
+                                .size(32.dp)
                         )
-                        Text(
-                            style = MaterialTheme.typography.subtitle2,
-                            text = ticker.formattedDailyChangePercentage,
-                            color = if (ticker.dailyChangeRelative > 0) Green else Red
-                        )
+                        Column(modifier = Modifier.padding(start = 16.dp)) {
+                            Text(
+                                modifier = Modifier,
+                                text = ticker.name,
+                                style = MaterialTheme.typography.subtitle1
+                            )
+
+                            Text(
+                                modifier = Modifier,
+                                text = ticker.symbol,
+                                style = MaterialTheme.typography.caption
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        Column(
+                            horizontalAlignment = Alignment.End
+                        ) {
+                            Text(
+                                text = ticker.formattedLastPrice,
+                                style = MaterialTheme.typography.subtitle1
+                            )
+                            Text(
+                                style = MaterialTheme.typography.subtitle2,
+                                text = ticker.formattedDailyChangePercentage,
+                                color = if (ticker.dailyChangeRelative > 0) Green else Red
+                            )
+                        }
                     }
                 }
             }
-        }
-        item {
-            Spacer(modifier = Modifier.padding(bottom = 16.dp))
-            Text(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .animateContentSize(
-                        animationSpec = tween(durationMillis = 200)
-                    ),
-                text = if (secondsFromLastUpdate < 2) {
-                    stringResource(id = R.string.last_updated_now)
-                } else {
-                    stringResource(R.string.last_updated_seconds, secondsFromLastUpdate)
-                },
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.caption
-            )
+            item {
+                Spacer(modifier = Modifier.padding(bottom = 16.dp))
+                Text(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateContentSize(
+                            animationSpec = tween(durationMillis = 200)
+                        ),
+                    text = if (secondsFromLastUpdate < 2) {
+                        stringResource(id = R.string.last_updated_now)
+                    } else {
+                        stringResource(R.string.last_updated_seconds, secondsFromLastUpdate)
+                    },
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.caption
+                )
+            }
         }
     }
 }
