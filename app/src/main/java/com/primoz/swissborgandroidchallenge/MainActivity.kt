@@ -59,12 +59,81 @@ class MainActivity : ComponentActivity() {
 
                         when (val state = tickerListState) {
                             is Response.Error -> {
-                                ErrorScreen(
-                                    modifier = Modifier.fillMaxSize(),
-                                    onRetryPressed = {
-                                        viewModel.searchTickers()
+                                // TODO Notify user about error issue
+                                // Ticker List
+                                val items = state.data
+                                if (items == null) {
+                                    ErrorScreen(
+                                        modifier = Modifier.fillMaxSize(),
+                                        onRetryPressed = {
+                                            viewModel.searchTickers()
+                                        })
+                                } else {
+                                    LazyColumn(
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp, top = 8.dp)
+                                    ) {
+                                        itemsIndexed(items) { index, ticker ->
+                                            Card(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .border(
+                                                        border = BorderStroke(1.dp, Color.Black.copy(0.12f)),
+                                                        shape = MaterialTheme.shapes.medium
+                                                    ),
+                                                elevation = 0.dp,
+                                                shape = MaterialTheme.shapes.medium
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier
+                                                        .clickable { // Clickable inside row and not card because ripple isn't clipped and we don't want "Experimental"
+                                                            // TODO maybe expand/collapse
+                                                        }
+                                                        .fillMaxWidth()
+                                                        .padding(vertical = 16.dp, horizontal = 16.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Icon(
+                                                        painter = painterResource(id = ticker.icon),
+                                                        contentDescription = "Icon",
+                                                        tint = Color.Unspecified,
+                                                        modifier = Modifier
+                                                            .size(32.dp)
+                                                    )
+                                                    Column(modifier = Modifier.padding(start = 16.dp)) {
+                                                        Text(
+                                                            modifier = Modifier,
+                                                            text = ticker.name,
+                                                            style = MaterialTheme.typography.subtitle1
+                                                        )
+
+                                                        Text(
+                                                            modifier = Modifier,
+                                                            text = ticker.symbol,
+                                                            style = MaterialTheme.typography.caption
+                                                        )
+                                                    }
+
+                                                    Spacer(modifier = Modifier.weight(1f))
+
+                                                    Column(
+                                                        horizontalAlignment = Alignment.End
+                                                    ) {
+                                                        Text(
+                                                            text = ticker.formattedLastPrice,
+                                                            style = MaterialTheme.typography.subtitle1
+                                                        )
+                                                        Text(
+                                                            style = MaterialTheme.typography.subtitle2,
+                                                            text = ticker.formattedDailyChangePercentage,
+                                                            color = if (ticker.dailyChangeRelative > 0) Green else Red
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
-                                )
+                                }
                             }
                             Response.Loading -> {
                                 LoadingScreen(
@@ -77,7 +146,8 @@ class MainActivity : ComponentActivity() {
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
                                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp, top = 8.dp)
                                 ) {
-                                    itemsIndexed(state.data) { index, ticker ->
+                                    val items = state.data
+                                    itemsIndexed(items) { index, ticker ->
                                         Card(
                                             modifier = Modifier
                                                 .fillMaxWidth()

@@ -33,7 +33,13 @@ class TickerListViewModel @Inject constructor(
         viewModelScope.launch {
             client.getTickers(searchQuery)
                 .onSuccess { _tickerListState.value = Response.Success(it) }
-                .onFailure { _tickerListState.value = Response.Error(it.message ?: "Something went wrong") }
+                .onFailure {
+                    val currentState = tickerListState.value
+                    _tickerListState.value = Response.Error(
+                        data = (currentState as? Response.Success)?.data,
+                        message = it.message ?: "Something went wrong"
+                    )
+                }
         }
     }
 }
