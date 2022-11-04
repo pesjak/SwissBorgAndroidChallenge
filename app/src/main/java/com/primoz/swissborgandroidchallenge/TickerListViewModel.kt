@@ -92,10 +92,10 @@ class TickerListViewModel @Inject constructor(
                     unFilteredList = it.toMutableList()
 
                     var filteredList = searchTickers(unFilteredList)
-                    if (currentAppliedFilter.value == FilterType.SORT_GAIN) {
-                        filteredList = filteredList.sortedByDescending { it.dailyChangePercentage }
-                    } else if (currentAppliedFilter.value == FilterType.SORT_LOSS) {
-                        filteredList = filteredList.sortedBy { it.dailyChangePercentage }
+                    filteredList = when (currentAppliedFilter.value) {
+                        FilterType.SORT_GAIN -> filteredList.sortedByDescending { it.dailyChangePercentage }
+                        FilterType.SORT_LOSS -> filteredList.sortedBy { it.dailyChangePercentage }
+                        else -> filteredList.sortedBy { it.name }
                     }
 
                     _tickerListState.value = Response.Success(filteredList)
@@ -115,10 +115,10 @@ class TickerListViewModel @Inject constructor(
     fun updateSearchQuery(searchQuery: String) {
         _searchQuery.value = searchQuery
         var filteredData = searchTickers(unFilteredList)
-        if (currentAppliedFilter.value == FilterType.SORT_GAIN) {
-            filteredData = filteredData.sortedByDescending { it.dailyChangePercentage }
-        } else if (currentAppliedFilter.value == FilterType.SORT_LOSS) {
-            filteredData = filteredData.sortedBy { it.dailyChangePercentage }
+        filteredData = when (currentAppliedFilter.value) {
+            FilterType.SORT_GAIN -> filteredData.sortedByDescending { it.dailyChangePercentage }
+            FilterType.SORT_LOSS -> filteredData.sortedBy { it.dailyChangePercentage }
+            else -> filteredData.sortedBy { it.name }
         }
         when (_tickerListState.value) {
             is Response.Error -> _tickerListState.value = Response.Error(key = "search", data = filteredData, message = "No Data")
@@ -145,10 +145,10 @@ class TickerListViewModel @Inject constructor(
         _currentAppliedFilter.value = _toApplyFilter.value
         _toApplyFilter.value = null
 
-        if (currentAppliedFilter.value == FilterType.SORT_GAIN) {
-            filteredData = filteredData.sortedByDescending { it.dailyChangePercentage }
-        } else if (currentAppliedFilter.value == FilterType.SORT_LOSS) {
-            filteredData = filteredData.sortedBy { it.dailyChangePercentage }
+        filteredData = when (currentAppliedFilter.value) {
+            FilterType.SORT_GAIN -> filteredData.sortedByDescending { it.dailyChangePercentage }
+            FilterType.SORT_LOSS -> filteredData.sortedBy { it.dailyChangePercentage }
+            else -> filteredData.sortedBy { it.name }
         }
         when (_tickerListState.value) {
             is Response.Error -> _tickerListState.value = Response.Error(key = "search", data = filteredData, message = "No Data")
@@ -159,6 +159,19 @@ class TickerListViewModel @Inject constructor(
 
     fun clearFilters() {
         _currentAppliedFilter.value = null
+        _toApplyFilter.value = null
+
+        var filteredData = searchTickers(unFilteredList)
+        filteredData = when (currentAppliedFilter.value) {
+            FilterType.SORT_GAIN -> filteredData.sortedByDescending { it.dailyChangePercentage }
+            FilterType.SORT_LOSS -> filteredData.sortedBy { it.dailyChangePercentage }
+            else -> filteredData.sortedBy { it.name }
+        }
+        when (_tickerListState.value) {
+            is Response.Error -> _tickerListState.value = Response.Error(key = "search", data = filteredData, message = "No Data")
+            Response.Loading -> {} // No need to handle this
+            is Response.Success -> _tickerListState.value = Response.Success(data = filteredData)
+        }
     }
 
     private fun searchTickers(tickers: List<Ticker>): List<Ticker> {
