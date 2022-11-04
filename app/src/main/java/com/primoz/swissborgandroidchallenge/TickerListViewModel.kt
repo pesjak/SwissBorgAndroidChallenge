@@ -3,6 +3,7 @@ package com.primoz.swissborgandroidchallenge
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.primoz.swissborgandroidchallenge.composables.FilterType
 import com.primoz.swissborgandroidchallenge.network.BitFinexClient
 import com.primoz.swissborgandroidchallenge.network.Response
 import com.primoz.swissborgandroidchallenge.network.data.Ticker
@@ -26,6 +27,12 @@ class TickerListViewModel @Inject constructor(
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing get() = _isRefreshing
+
+    private val _currentAppliedFilter = MutableStateFlow<FilterType?>(null)
+    val currentAppliedFilter get() = _currentAppliedFilter
+
+    private val _toApplyFilter = MutableStateFlow<FilterType?>(null)
+    val toApplyFilter get() = _toApplyFilter
 
     private val _tickerListState = MutableStateFlow<Response<List<Ticker>>>(Response.Loading)
     val tickerListState get() = _tickerListState
@@ -84,7 +91,12 @@ class TickerListViewModel @Inject constructor(
 
                     unFilteredList = it.toMutableList()
 
-                    val filteredList = searchTickers(unFilteredList)
+                    var filteredList = searchTickers(unFilteredList)
+                    if (currentAppliedFilter.value == FilterType.SORT_GAIN) {
+                        filteredList = filteredList.sortedByDescending { it.dailyChangePercentage }
+                    } else if (currentAppliedFilter.value == FilterType.SORT_LOSS) {
+                        filteredList = filteredList.sortedBy { it.dailyChangePercentage }
+                    }
 
                     _tickerListState.value = Response.Success(filteredList)
                 }
@@ -102,7 +114,12 @@ class TickerListViewModel @Inject constructor(
 
     fun updateSearchQuery(searchQuery: String) {
         _searchQuery.value = searchQuery
-        val filteredData = searchTickers(unFilteredList)
+        var filteredData = searchTickers(unFilteredList)
+        if (currentAppliedFilter.value == FilterType.SORT_GAIN) {
+            filteredData = filteredData.sortedByDescending { it.dailyChangePercentage }
+        } else if (currentAppliedFilter.value == FilterType.SORT_LOSS) {
+            filteredData = filteredData.sortedBy { it.dailyChangePercentage }
+        }
         when (_tickerListState.value) {
             is Response.Error -> _tickerListState.value = Response.Error(key = "search", data = filteredData, message = "No Data")
             Response.Loading -> {} // No need to handle this
@@ -110,9 +127,44 @@ class TickerListViewModel @Inject constructor(
         }
     }
 
+    fun filtersApplied(): FilterType? {
+        if (currentAppliedFilter.value == FilterType.SORT_GAIN) {
+            return FilterType.SORT_GAIN
+        } else if (currentAppliedFilter.value == FilterType.SORT_LOSS) {
+            return FilterType.SORT_LOSS
+        }
+        return null
+    }
+
+    fun selectFilterOption(filterOption: FilterType?) {
+        _toApplyFilter.value = filterOption
+    }
+
+    fun applySelectedFilters() {
+        var filteredData = searchTickers(unFilteredList)
+        _currentAppliedFilter.value = _toApplyFilter.value
+        _toApplyFilter.value = null
+
+        if (currentAppliedFilter.value == FilterType.SORT_GAIN) {
+            filteredData = filteredData.sortedByDescending { it.dailyChangePercentage }
+        } else if (currentAppliedFilter.value == FilterType.SORT_LOSS) {
+            filteredData = filteredData.sortedBy { it.dailyChangePercentage }
+        }
+        when (_tickerListState.value) {
+            is Response.Error -> _tickerListState.value = Response.Error(key = "search", data = filteredData, message = "No Data")
+            Response.Loading -> {} // No need to handle this
+            is Response.Success -> _tickerListState.value = Response.Success(data = filteredData)
+        }
+    }
+
+    fun clearFilters() {
+        _currentAppliedFilter.value = null
+    }
+
     private fun searchTickers(tickers: List<Ticker>): List<Ticker> {
         return tickers.filter {
             it.name.lowercase().contains(searchQuery.value.lowercase()) || it.symbol.lowercase().contains(searchQuery.value.lowercase())
         }
     }
+
 }

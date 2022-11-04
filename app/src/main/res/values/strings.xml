@@ -7,4 +7,10 @@
     <string name="last_updated_now">Last updated: just now</string>
     <string name="last_updated_seconds">Last updated: %d seconds ago</string>
     <string name="error_no_items">No results for \"%s\"</string>
+    <string name="sort_none">Sort</string>
+    <string name="sort_gain">Top gainers</string>
+    <string name="sort_loss">Top losers</string>
+    <string name="filters_title">Filter</string>
+    <string name="filters_clear_all">Clear all</string>
+    <string name="filters_apply">Apply</string>
 </resources>
