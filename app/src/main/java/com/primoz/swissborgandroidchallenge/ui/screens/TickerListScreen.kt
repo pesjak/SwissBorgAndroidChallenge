@@ -297,14 +297,17 @@ private fun TickerItem(
     formattedHigh: String,
     formattedLow: String,
 ) {
-    Column {
+    Column(
+        modifier = modifier
+            .clickable { // Clickable inside row and not card because ripple isn't clipped and we don't want "Experimental"
+                tickerPressed()
+            }
+            .fillMaxWidth()
+            .padding(vertical = 16.dp, horizontal = 16.dp),
+    ) {
         Row(
             modifier = modifier
-                .clickable { // Clickable inside row and not card because ripple isn't clipped and we don't want "Experimental"
-                    tickerPressed()
-                }
-                .fillMaxWidth()
-                .padding(vertical = 16.dp, horizontal = 16.dp),
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
