@@ -11,7 +11,11 @@ data class Ticker(
     val high: Float,
     val low: Float,
 ) {
+    val ratio: Float = (lastPrice - low) / ((high - low))
     val formattedLastPrice: String = "$%,.2f".format(Locale.ENGLISH, lastPrice)
+    val formattedHigh: String = "%,.2f".format(Locale.ENGLISH, high)
+    val formattedLow: String = "%,.2f".format(Locale.ENGLISH, low)
+
     val formattedDailyChangePercentage: String = "${if (dailyChangePercentage > 0) "+" else ""}%,.2f%%".format(
         Locale.ENGLISH,
         dailyChangePercentage

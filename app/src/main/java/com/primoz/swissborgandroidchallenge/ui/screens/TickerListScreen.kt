@@ -14,12 +14,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -70,7 +72,6 @@ fun TickerListScreen() {
     val closeSheet: () -> Unit = {
         coroutineScope.launch {
             bottomSheetState.hide()
-            expandedTicker = null
         }
     }
 
@@ -250,6 +251,9 @@ fun TickerContent(
                         formattedDailyChangePercentage = ticker.formattedDailyChangePercentage,
                         dailyChangePercentage = ticker.dailyChangePercentage,
                         symbol = ticker.symbol,
+                        currentRatio = ticker.ratio,
+                        formattedLow = ticker.formattedLow,
+                        formattedHigh = ticker.formattedHigh,
                         tickerPressed = {
                             tickerPressed(ticker)
                         }
@@ -289,6 +293,9 @@ private fun TickerItem(
     dailyChangePercentage: Float = 10.0f,
     symbol: String = "BTC",
     tickerPressed: () -> Unit = {},
+    currentRatio: Float,
+    formattedHigh: String,
+    formattedLow: String,
 ) {
     Column {
         Row(
@@ -359,8 +366,56 @@ private fun TickerItem(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp)
+                    .padding(top = 9.dp)
+                    .height(64.dp)
             ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(text = "Low")
+                    Text(
+                        modifier = Modifier.padding(top = 4.dp),
+                        text = formattedLow,
+                        style = MaterialTheme.typography.subtitle2
+                    )
+                }
+                Column(
+                    modifier = Modifier
+                        .weight(2f)
+                        .fillMaxHeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .padding(top = 16.dp)
+                            .height(8.dp)
+                            .fillMaxWidth()
+                            .clip(CircleShape),
+                        progress = currentRatio,
+                        backgroundColor = MaterialTheme.colors.onBackground.copy(0.12f)
+                    )
+                    Text(
+                        modifier = Modifier.padding(top = 4.dp),
+                        text = "Today",
+                        style = MaterialTheme.typography.subtitle2
+                    )
+                }
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(text = "High")
+                    Text(
+                        modifier = Modifier.padding(top = 4.dp),
+                        text = formattedHigh,
+                        style = MaterialTheme.typography.subtitle2,
+                    )
+                }
             }
         }
     }
