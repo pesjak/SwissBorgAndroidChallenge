@@ -19,12 +19,15 @@ class TickerListViewModel @Inject constructor(
     private val client: BitFinexClient
 ) : ViewModel() {
 
+    // Search
     private val _searchQuery = mutableStateOf("")
     val searchQuery get() = _searchQuery
 
+    // Seconds from Last Update
     private val _secondsFromLastUpdate = mutableStateOf(0)
     val secondsFromLastUpdate get() = _secondsFromLastUpdate
 
+    // Refresh state
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing get() = _isRefreshing
 
