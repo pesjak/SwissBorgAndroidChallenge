@@ -10,7 +10,7 @@
     <string name="sort_none">Sort</string>
     <string name="sort_gain">Top gainers</string>
     <string name="sort_loss">Top losers</string>
-    <string name="filters_title">Filter</string>
+    <string name="filters_title">Sort</string>
     <string name="filters_clear_all">Clear all</string>
     <string name="filters_apply">Apply</string>
 </resources>

@@ -1,4 +1,4 @@
-package com.primoz.swissborgandroidchallenge.composables
+package com.primoz.swissborgandroidchallenge.ui.composables
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -6,48 +6,42 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ChainStyle
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import com.primoz.swissborgandroidchallenge.R
+import com.primoz.swissborgandroidchallenge.helpers.FilterType
 import com.primoz.swissborgandroidchallenge.ui.theme.Shapes
+import com.primoz.swissborgandroidchallenge.ui.theme.SwissBorgAndroidChallengeTheme
 
-enum class FilterType(val stringResource: Int) {
-    SORT_GAIN(R.string.sort_gain),
-    SORT_LOSS(R.string.sort_loss)
-}
-
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun FiltersBottomSheet(
     modifier: Modifier = Modifier,
-    filterSortType: FilterType? = null,
-    sortPressed: (FilterType?) -> Unit = {},
+    toApplyFilter: FilterType? = null,
+    filterPressed: (FilterType?) -> Unit = {},
     closeButtonPressed: () -> Unit = {},
-    clearAllButtonClick: () -> Unit = {},
-    applyButtonClick: () -> Unit = {},
-    bottomSheetState: ModalBottomSheetState,
-    toApplyFilter: FilterType?,
+    clearAllButtonPressed: () -> Unit = {},
+    applyButtonPressed: () -> Unit = {},
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
             .padding(start = 16.dp, end = 16.dp)
     ) {
-
         Column {
             HandleBarFilters(
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 0.dp, top = 16.dp),
                 text = stringResource(R.string.filters_title),
-                closeButtonClicked = closeButtonPressed
+                closeButtonPressed = closeButtonPressed
             )
             Column(
                 modifier = Modifier
@@ -58,24 +52,20 @@ fun FiltersBottomSheet(
                     filterOption = FilterType.SORT_GAIN,
                     selectedItem = toApplyFilter,
                     radioButtonPressed = {
-                        sortPressed(it)
+                        filterPressed(it)
                     }
                 )
                 RadioButtonItem(
                     filterOption = FilterType.SORT_LOSS,
                     selectedItem = toApplyFilter,
                     radioButtonPressed = {
-                        sortPressed(it)
+                        filterPressed(it)
                     }
                 )
             }
             BottomSheetMainButtons(
-                applyButtonClick = {
-                    applyButtonClick()
-                },
-                clearAllButtonClick = {
-                    clearAllButtonClick()
-                }
+                applyButtonPressed = applyButtonPressed,
+                clearAllButtonPressed = clearAllButtonPressed
             )
         }
     }
@@ -85,7 +75,7 @@ fun FiltersBottomSheet(
 fun HandleBarFilters(
     modifier: Modifier = Modifier,
     text: String = "Title",
-    closeButtonClicked: () -> Unit = {}
+    closeButtonPressed: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -106,7 +96,7 @@ fun HandleBarFilters(
             modifier = Modifier.constrainAs(close) {
                 start.linkTo(parent.start)
             },
-            onClick = closeButtonClicked
+            onClick = closeButtonPressed
         ) {
             Icon(
                 Icons.Default.Close,
@@ -132,8 +122,8 @@ fun HandleBarFilters(
 @Composable
 private fun BottomSheetMainButtons(
     modifier: Modifier = Modifier,
-    clearAllButtonClick: () -> Unit = {},
-    applyButtonClick: () -> Unit = {},
+    clearAllButtonPressed: () -> Unit = {},
+    applyButtonPressed: () -> Unit = {},
 ) {
     ConstraintLayout(
         modifier = modifier
@@ -149,7 +139,7 @@ private fun BottomSheetMainButtons(
                     width = Dimension.fillToConstraints
                 }
                 .padding(start = 8.dp, end = 16.dp),
-            onClick = clearAllButtonClick
+            onClick = clearAllButtonPressed
         ) {
             Text(
                 text = stringResource(R.string.filters_clear_all).uppercase(),
@@ -164,7 +154,7 @@ private fun BottomSheetMainButtons(
                     width = Dimension.fillToConstraints
                 }
                 .padding(start = 16.dp),
-            onClick = applyButtonClick
+            onClick = applyButtonPressed
         ) {
             Text(stringResource(R.string.filters_apply).uppercase())
         }
@@ -205,5 +195,13 @@ fun RadioButtonItem(
             ),
             onClick = null
         )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun BottomSheetPreview() {
+    SwissBorgAndroidChallengeTheme {
+        FiltersBottomSheet()
     }
 }

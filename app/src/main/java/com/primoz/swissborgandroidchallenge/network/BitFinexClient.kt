@@ -6,9 +6,7 @@ import javax.inject.Inject
 class BitFinexClient @Inject constructor(
     private val bitFinexAPI: BitFinexAPI
 ) {
-    suspend fun getTickers(
-        searchQuery: String = ""
-    ) = kotlin.runCatching {
+    suspend fun getTickers() = kotlin.runCatching {
         val exampleSymbols = "tBTCUSD,tETHUSD,tCHSB:USD,tLTCUSD,tXRPUSD,tEOSUSD,tSANUSD,tDATUSD,tSNTUSD,tDOGE:USD"
         bitFinexAPI.getTickers(exampleSymbols).map {
             val data = it.asJsonArray
