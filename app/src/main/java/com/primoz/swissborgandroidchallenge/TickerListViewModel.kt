@@ -32,6 +32,8 @@ class TickerListViewModel @Inject constructor(
 
     private var shouldUpdateTickers = true
 
+    private var unFilteredList = mutableListOf<Ticker>()
+
     init {
         loadTickers()
         viewModelScope.launch {
@@ -79,7 +81,12 @@ class TickerListViewModel @Inject constructor(
                     _secondsFromLastUpdate.value = 0
                     shouldUpdateTickers = true
                     _isRefreshing.value = false
-                    _tickerListState.value = Response.Success(it)
+
+                    unFilteredList = it.toMutableList()
+
+                    val filteredList = searchTickers(unFilteredList)
+
+                    _tickerListState.value = Response.Success(filteredList)
                 }
                 .onFailure {
                     shouldUpdateTickers = false
@@ -95,5 +102,17 @@ class TickerListViewModel @Inject constructor(
 
     fun updateSearchQuery(searchQuery: String) {
         _searchQuery.value = searchQuery
+        val filteredData = searchTickers(unFilteredList)
+        when (_tickerListState.value) {
+            is Response.Error -> _tickerListState.value = Response.Error(key = "search", data = filteredData, message = "No Data")
+            Response.Loading -> {} // No need to handle this
+            is Response.Success -> _tickerListState.value = Response.Success(data = filteredData)
+        }
+    }
+
+    private fun searchTickers(tickers: List<Ticker>): List<Ticker> {
+        return tickers.filter {
+            it.name.lowercase().contains(searchQuery.value.lowercase()) || it.symbol.lowercase().contains(searchQuery.value.lowercase())
+        }
     }
 }

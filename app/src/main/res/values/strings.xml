@@ -6,4 +6,5 @@
     <string name="error_could_not_retrieve_coins">Couldn\'t retrieve latest coins</string>
     <string name="last_updated_now">Last updated: just now</string>
     <string name="last_updated_seconds">Last updated: %d seconds ago</string>
+    <string name="error_no_items">No results for \"%s\"</string>
 </resources>

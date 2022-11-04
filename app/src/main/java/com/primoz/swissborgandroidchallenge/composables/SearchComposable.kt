@@ -23,6 +23,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.primoz.swissborgandroidchallenge.R
+
 @Composable
 fun SearchComposable(
     modifier: Modifier = Modifier,
@@ -82,7 +83,7 @@ fun SearchComposable(
             keyboardActions = KeyboardActions(
                 onSearch = {
                     focusManager.clearFocus()
-                }
+                },
             ),
             singleLine = true,
             colors = TextFieldDefaults.textFieldColors(

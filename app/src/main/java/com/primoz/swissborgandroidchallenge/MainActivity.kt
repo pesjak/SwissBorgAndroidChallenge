@@ -6,10 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -99,9 +96,16 @@ class MainActivity : ComponentActivity() {
                                         modifier = Modifier.fillMaxSize(),
                                         onRetryPressed = {
                                             viewModel.loadTickers()
-                                        }
+                                        },
                                     )
                                 } else {
+                                    if (items.isEmpty()) {
+                                        ErrorScreen(
+                                            modifier = Modifier.fillMaxSize(),
+                                            message = getString(R.string.error_no_items, searchQuery),
+                                            showRetry = false
+                                        )
+                                    }
                                     TickerList(
                                         items = items,
                                         secondsFromLastUpdate = secondsFromLastUpdate,
@@ -137,7 +141,8 @@ class MainActivity : ComponentActivity() {
         modifier: Modifier = Modifier,
         message: String = stringResource(R.string.error_something_went_wrong),
         buttonText: String = stringResource(R.string.error_try_again),
-        onRetryPressed: () -> Unit
+        showRetry: Boolean = true,
+        onRetryPressed: () -> Unit = {},
     ) {
         Column(
             modifier = modifier,
@@ -147,10 +152,13 @@ class MainActivity : ComponentActivity() {
             Text(
                 text = message,
                 modifier = Modifier.padding(16.dp),
+                textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.h6,
             )
-            OutlinedButton(onClick = onRetryPressed) {
-                Text(text = buttonText)
+            if (showRetry) {
+                OutlinedButton(onClick = onRetryPressed) {
+                    Text(text = buttonText)
+                }
             }
         }
     }
@@ -164,6 +172,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TickerList(
     items: List<Ticker> = listOf(),
@@ -172,6 +181,7 @@ private fun TickerList(
     onRefreshItems: () -> Unit = {},
     refreshingState: SwipeRefreshState,
 ) {
+
     SwipeRefresh(
         state = refreshingState,
         swipeEnabled = enableRefreshing,
@@ -183,14 +193,15 @@ private fun TickerList(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 8.dp)
         ) {
-            items(items) { ticker ->
+            items(items, key = { it.symbol }) { ticker ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .border(
                             border = BorderStroke(1.dp, Color.Black.copy(0.12f)),
                             shape = MaterialTheme.shapes.medium
-                        ),
+                        )
+                        .animateItemPlacement(),
                     elevation = 0.dp,
                     shape = MaterialTheme.shapes.medium
                 ) {
@@ -243,10 +254,10 @@ private fun TickerList(
                 }
             }
             item {
-                Spacer(modifier = Modifier.padding(top = 16.dp))
                 Text(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(top = 16.dp)
                         .animateContentSize(
                             animationSpec = tween(durationMillis = 200)
                         ),
