@@ -31,7 +31,7 @@ fun ErrorScreen(
     message: String = stringResource(R.string.error_something_went_wrong),
     buttonText: String = stringResource(R.string.error_try_again),
     showRetry: Boolean = true,
-    retryPressed: () -> Unit = {},
+    onRetryPressed: () -> Unit = {},
 ) {
     Column(
         modifier = modifier.fillMaxSize(),
@@ -45,7 +45,7 @@ fun ErrorScreen(
             style = MaterialTheme.typography.h6,
         )
         if (showRetry) {
-            OutlinedButton(onClick = retryPressed) {
+            OutlinedButton(onClick = onRetryPressed) {
                 Text(text = buttonText)
             }
         }

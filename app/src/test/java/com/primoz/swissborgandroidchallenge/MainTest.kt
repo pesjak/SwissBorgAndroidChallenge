@@ -40,5 +40,4 @@ class MainTest {
 
         assertEquals(exampleList, list)
     }
-
 }

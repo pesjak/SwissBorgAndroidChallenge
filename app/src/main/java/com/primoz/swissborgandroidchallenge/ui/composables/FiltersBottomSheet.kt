@@ -41,7 +41,7 @@ fun FiltersBottomSheet(
             HandleBarFilters(
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 0.dp, top = 16.dp),
                 text = stringResource(R.string.filters_title),
-                closeButtonPressed = onCloseButtonPressed
+                onCloseButtonPressed = onCloseButtonPressed
             )
             Column(
                 modifier = Modifier
@@ -75,7 +75,7 @@ fun FiltersBottomSheet(
 fun HandleBarFilters(
     modifier: Modifier = Modifier,
     text: String = "Title",
-    closeButtonPressed: () -> Unit = {}
+    onCloseButtonPressed: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -96,7 +96,7 @@ fun HandleBarFilters(
             modifier = Modifier.constrainAs(close) {
                 start.linkTo(parent.start)
             },
-            onClick = closeButtonPressed
+            onClick = onCloseButtonPressed
         ) {
             Icon(
                 Icons.Default.Close,

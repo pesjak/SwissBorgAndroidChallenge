@@ -14,8 +14,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,13 +29,9 @@ import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.SwipeRefreshState
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.primoz.swissborgandroidchallenge.R
-import com.primoz.swissborgandroidchallenge.helpers.FilterType
 import com.primoz.swissborgandroidchallenge.network.Response
 import com.primoz.swissborgandroidchallenge.network.data.Ticker
-import com.primoz.swissborgandroidchallenge.ui.composables.ErrorScreen
-import com.primoz.swissborgandroidchallenge.ui.composables.FiltersBottomSheet
-import com.primoz.swissborgandroidchallenge.ui.composables.LoadingScreen
-import com.primoz.swissborgandroidchallenge.ui.composables.SearchComposable
+import com.primoz.swissborgandroidchallenge.ui.composables.*
 import com.primoz.swissborgandroidchallenge.ui.theme.Green
 import com.primoz.swissborgandroidchallenge.ui.theme.Red
 import com.primoz.swissborgandroidchallenge.ui.theme.ShapesTopOnly
@@ -185,7 +179,7 @@ private fun TickerContent(
             }
             val items = tickerResponse.data
             if (items.isNullOrEmpty()) {
-                ErrorScreen(retryPressed = onRetryPressed)
+                ErrorScreen(onRetryPressed = onRetryPressed)
             } else {
                 TickerList(
                     modifier = Modifier.fillMaxSize(),
@@ -195,6 +189,7 @@ private fun TickerContent(
                     refreshingState = refreshingState,
                     expandedTickerSymbol = expandedTickerSymbol,
                     listState = listState,
+                    searchQuery = searchQuery,
                     onTickerPressed = { onTickerPressed(it) },
                     onRefresh = onRefresh
                 )
@@ -215,10 +210,11 @@ private fun TickerContent(
                 secondsFromLastUpdate = secondsFromLastUpdate,
                 enableRefreshing = false,
                 refreshingState = refreshingState,
-                expandedTickerSymbol = expandedTickerSymbol,
                 listState = listState,
+                expandedTickerSymbol = expandedTickerSymbol,
                 onTickerPressed = { onTickerPressed(it) },
-                onRefresh = onRefresh
+                onRefresh = onRefresh,
+                searchQuery = searchQuery
             )
         }
     }
@@ -234,11 +230,16 @@ fun TickerList(
     refreshingState: SwipeRefreshState = rememberSwipeRefreshState(isRefreshing = false),
     listState: LazyListState = rememberLazyListState(),
     expandedTickerSymbol: String? = null,
+    searchQuery: String = "",
     onTickerPressed: (Ticker?) -> Unit = {},
     onRefresh: () -> Unit = {},
 ) {
+    // This is a hack for scroll position problem when using animateItemPlacement in LazyColumn bellow.
+    // Without this the scroll will be focused on the first item (which is correct), but if another item goes above the first one (sort)
+    // the focus won't move to the new one but remain on the old one and now the new first item is now hidden and user needs to scroll
+    // to see it
     LaunchedEffect(items.firstOrNull()) {
-        if(items.isNotEmpty()) {
+        if (items.isNotEmpty() && searchQuery.isEmpty()) {
             listState.animateScrollToItem(0)
         }
     }
@@ -249,6 +250,7 @@ fun TickerList(
         onRefresh = onRefresh,
     ) {
         LazyColumn(
+            modifier = Modifier.fillMaxSize(),
             state = listState,
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 8.dp),
@@ -291,7 +293,6 @@ fun TickerList(
                         .animateContentSize(
                             animationSpec = tween(durationMillis = 200)
                         )
-                        .background(Color.Transparent)
                         .animateItemPlacement(),
                     text = if (secondsFromLastUpdate < 2) {
                         stringResource(id = R.string.last_updated_now)
@@ -443,36 +444,3 @@ private fun TickerItem(
     }
 }
 
-@Composable
-fun SortChip(
-    modifier: Modifier = Modifier,
-    filter: FilterType? = null,
-    onChipPressed: () -> Unit = {},
-) {
-    Surface(
-        modifier = modifier.padding(end = 4.dp),
-        shape = MaterialTheme.shapes.large,
-        border = BorderStroke(1.dp, Color.Black.copy(0.12f)),
-        color = if (filter == null) Color.Transparent else MaterialTheme.colors.primary.copy(0.12f)
-    ) {
-        Row(
-            modifier = Modifier
-                .clickable { onChipPressed() }
-                .padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Filled.FilterList,
-                contentDescription = "filter",
-                modifier = Modifier
-                    .padding(top = 8.dp, bottom = 8.dp, start = 8.dp)
-                    .size(20.dp)
-            )
-            Text(
-                text = stringResource(id = filter?.stringResource ?: R.string.sort_none),
-                style = MaterialTheme.typography.body2,
-                modifier = Modifier.padding(8.dp)
-            )
-        }
-    }
-}

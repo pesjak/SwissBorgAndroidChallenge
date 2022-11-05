@@ -1,10 +1,10 @@
 package com.primoz.swissborgandroidchallenge.network
 
 import com.primoz.swissborgandroidchallenge.network.data.Ticker
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
 class BitFinexClient @Inject constructor(
     private val bitFinexAPI: BitFinexAPI,
@@ -26,5 +26,4 @@ class BitFinexClient @Inject constructor(
             }
         }
     }
-
 }

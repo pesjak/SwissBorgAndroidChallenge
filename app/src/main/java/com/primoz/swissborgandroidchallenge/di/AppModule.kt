@@ -19,10 +19,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 class AppModule {
 
     @Provides
-    fun provideBaseUrl() = Constants.Rest.BASE_URL
-
-    @Provides
-    fun provideOkHttpClient() = if (BuildConfig.DEBUG) {
+    fun provideOkHttpClient(): OkHttpClient = if (BuildConfig.DEBUG) {
         val loggingInterceptor = HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
         OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
@@ -39,14 +36,14 @@ class AppModule {
     @Provides
     fun provideRetrofit(
         okHttpClient: OkHttpClient
-    ) = Retrofit.Builder()
+    ): Retrofit = Retrofit.Builder()
         .addConverterFactory(GsonConverterFactory.create())
-        .baseUrl(provideBaseUrl())
+        .baseUrl(Constants.Rest.BASE_URL)
         .client(okHttpClient)
         .build()
 
     @Provides
-    fun provideApi(retrofit: Retrofit) = retrofit.create(BitFinexAPI::class.java)
+    fun provideApi(retrofit: Retrofit): BitFinexAPI = retrofit.create(BitFinexAPI::class.java)
 
     @Provides
     fun provideSwissBorgClient(api: BitFinexAPI): BitFinexClient = BitFinexClient(api)
