@@ -1,6 +1,5 @@
 package com.primoz.swissborgandroidchallenge.ui.screens
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.primoz.swissborgandroidchallenge.helpers.FilterType
@@ -19,15 +18,12 @@ class TickerListViewModel @Inject constructor(
     private val client: BitFinexClient
 ) : ViewModel() {
 
-    // Search
-    private val _searchQuery = mutableStateOf("")
+    private val _searchQuery = MutableStateFlow("")
     val searchQuery get() = _searchQuery
 
-    // Seconds from Last Update
-    private val _secondsFromLastUpdate = mutableStateOf(0)
+    private val _secondsFromLastUpdate = MutableStateFlow(0)
     val secondsFromLastUpdate get() = _secondsFromLastUpdate
 
-    // Refresh state
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing get() = _isRefreshing
 
@@ -51,18 +47,18 @@ class TickerListViewModel @Inject constructor(
 
     fun refreshTickers() {
         _isRefreshing.value = true
-        updateTickerList()
+        getTickerList()
     }
 
     fun getNewTickerList() {
         _tickerListState.value = Response.Loading
-        updateTickerList()
+        getTickerList()
     }
 
     fun updateSearchQuery(searchQuery: String) {
         _searchQuery.value = searchQuery
         val newTickerList = filterTickerList()
-        updateStateTickerList(newTickerList)
+        updateTickerList(newTickerList)
     }
 
     fun selectFilterOption(filterOption: FilterType?) {
@@ -74,17 +70,17 @@ class TickerListViewModel @Inject constructor(
         _toApplyFilter.value = null
 
         val newTickerList = filterTickerList()
-        updateStateTickerList(newTickerList)
+        updateTickerList(newTickerList)
     }
 
     fun clearFilters() {
         _currentAppliedFilter.value = null
         _toApplyFilter.value = null
         val newTickerList = filterTickerList()
-        updateStateTickerList(newTickerList)
+        updateTickerList(newTickerList)
     }
 
-    private fun updateTickerList() {
+    private fun getTickerList() {
         viewModelScope.launch(Dispatchers.IO) {
             client.getTickers()
                 .onSuccess {
@@ -98,19 +94,20 @@ class TickerListViewModel @Inject constructor(
                 }
                 .onFailure {
                     shouldUpdateTickers = false
-                    _isRefreshing.value = false
                     val currentState = tickerListState.value
                     _tickerListState.value = Response.Error( // Don't update the items
+                        key = if (isRefreshing.value) "refresh$secondsFromLastUpdate" else "get",
                         data = (currentState as? Response.Success)?.data ?: (currentState as? Response.Error)?.data,
                         message = it.message ?: "Something went wrong"
                     )
+                    _isRefreshing.value = false
                 }
         }
     }
 
-    private fun updateStateTickerList(newTickerList: List<Ticker>) {
+    private fun updateTickerList(newTickerList: List<Ticker>) {
         when (_tickerListState.value) {
-            is Response.Error -> _tickerListState.value = Response.Error(key = "search", data = newTickerList, message = "No Data")
+            is Response.Error -> _tickerListState.value = Response.Error(key = "update", data = newTickerList, message = "No Data")
             Response.Loading -> {} // No need to handle this
             is Response.Success -> _tickerListState.value = Response.Success(data = newTickerList)
         }
@@ -122,7 +119,7 @@ class TickerListViewModel @Inject constructor(
                 while (true) {
                     if (shouldUpdateTickers) {
                         delay(5000L)
-                        updateTickerList()
+                        getTickerList()
                     }
                 }
             }

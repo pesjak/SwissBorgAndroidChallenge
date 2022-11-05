@@ -47,18 +47,19 @@ import kotlinx.coroutines.launch
 
 @ExperimentalMaterialApi
 @Composable
-fun TickerListScreen() {
-    val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val viewModel: TickerListViewModel = hiltViewModel()
-    val searchQuery by viewModel.searchQuery
-    val secondsFromLastUpdate by viewModel.secondsFromLastUpdate
+fun TickerListScreen(
+    modifier: Modifier = Modifier,
+    viewModel: TickerListViewModel = hiltViewModel()
+) {
 
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val secondsFromLastUpdate by viewModel.secondsFromLastUpdate.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
     val tickerListState by viewModel.tickerListState.collectAsState()
     val currentAppliedFilter by viewModel.currentAppliedFilter.collectAsState()
     val toApplyFilter by viewModel.toApplyFilter.collectAsState()
 
-    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
     val refreshingState = rememberSwipeRefreshState(isRefreshing)
     val listState = rememberLazyListState()
 
@@ -81,7 +82,7 @@ fun TickerListScreen() {
         }
     }
 
-    // Whenever bottomSheetState is changed, update UI to currently applied filters
+    // Whenever bottomSheet hides, update bottomSheet UI of which filters are applied
     LaunchedEffect(bottomSheetState.currentValue) {
         if (bottomSheetState.currentValue == ModalBottomSheetValue.Hidden) {
             viewModel.selectFilterOption(currentAppliedFilter)
@@ -113,8 +114,7 @@ fun TickerListScreen() {
         }
     ) {
         Scaffold(
-            modifier = Modifier
-                .background(MaterialTheme.colors.background),
+            modifier = Modifier.background(MaterialTheme.colors.background),
         ) { contentPadding ->
             Column(
                 modifier = Modifier
@@ -129,6 +129,7 @@ fun TickerListScreen() {
                     },
                 )
 
+                // Sort
                 SortChip(
                     modifier = Modifier.padding(start = 16.dp, top = 8.dp),
                     filter = currentAppliedFilter,
@@ -139,75 +140,98 @@ fun TickerListScreen() {
 
                 Spacer(modifier = Modifier.padding(4.dp))
 
-                when (val state = tickerListState) {
-                    is Response.Loading -> LoadingScreen()
-                    is Response.Error -> {
-                        LaunchedEffect(state.key) { // Key to trigger next time error shows
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.error_could_not_retrieve_coins),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                        val items = state.data
-                        if (items == null) {
-                            ErrorScreen(
-                                onRetryPressed = {
-                                    viewModel.getNewTickerList()
-                                },
-                            )
-                        } else {
-                            TickerContent(
-                                modifier = Modifier.fillMaxSize(),
-                                items = items,
-                                secondsFromLastUpdate = secondsFromLastUpdate,
-                                enableRefreshing = true,
-                                refreshingState = refreshingState,
-                                expandedTicker = expandedTicker,
-                                listState = listState,
-                                tickerPressed = {
-                                    expandedTicker = if (expandedTicker == it) null else it
-                                },
-                                onRefreshItems = {
-                                    viewModel.refreshTickers()
-                                }
-                            )
-                        }
+                // Content
+                TickerContent(
+                    tickerResponse = tickerListState,
+                    viewModel = viewModel,
+                    secondsFromLastUpdate = secondsFromLastUpdate,
+                    refreshingState = refreshingState,
+                    expandedTicker = expandedTicker,
+                    listState = listState,
+                    searchQuery = searchQuery,
+                    tickerPressed = {
+                        expandedTicker = if (expandedTicker == it) null else it
                     }
-                    is Response.Success -> {
-                        val items = state.data
-                        // Ticker List
-                        if (items.isEmpty()) {
-                            ErrorScreen(
-                                modifier = Modifier.fillMaxSize(),
-                                message = stringResource(R.string.error_no_items, searchQuery),
-                                showRetry = false
-                            )
-                        }
-                        TickerContent(
-                            modifier = Modifier.fillMaxSize(),
-                            items = items,
-                            secondsFromLastUpdate = secondsFromLastUpdate,
-                            enableRefreshing = false,
-                            refreshingState = refreshingState,
-                            expandedTicker = expandedTicker,
-                            listState = listState,
-                            tickerPressed = {
-                                expandedTicker = if (expandedTicker == it) null else it
-                            },
-                            onRefreshItems = {
-                                viewModel.refreshTickers()
-                            }
-                        )
-                    }
-                }
+                )
             }
         }
     }
 }
 
 @Composable
-fun TickerContent(
+private fun TickerContent(
+    tickerResponse: Response<List<Ticker>>,
+    viewModel: TickerListViewModel,
+    secondsFromLastUpdate: Int,
+    refreshingState: SwipeRefreshState,
+    expandedTicker: Ticker?,
+    listState: LazyListState,
+    searchQuery: String,
+    tickerPressed: (Ticker?) -> Unit = {}
+) {
+    val context = LocalContext.current
+    when (tickerResponse) {
+        is Response.Loading -> LoadingScreen()
+        is Response.Error -> {
+            LaunchedEffect(tickerResponse.key) { // Key to trigger next time error shows
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.error_could_not_retrieve_coins),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            val items = tickerResponse.data
+            if (items.isNullOrEmpty()) {
+                ErrorScreen(
+                    onRetryPressed = {
+                        viewModel.getNewTickerList()
+                    },
+                )
+            } else {
+                TickerListContent(
+                    modifier = Modifier.fillMaxSize(),
+                    items = items,
+                    secondsFromLastUpdate = secondsFromLastUpdate,
+                    enableRefreshing = true,
+                    refreshingState = refreshingState,
+                    expandedTicker = expandedTicker,
+                    listState = listState,
+                    tickerPressed = { tickerPressed(it) },
+                    onRefreshItems = {
+                        viewModel.refreshTickers()
+                    }
+                )
+            }
+        }
+        is Response.Success -> {
+            val items = tickerResponse.data
+            // Ticker List
+            if (items.isEmpty()) {
+                ErrorScreen(
+                    modifier = Modifier.fillMaxSize(),
+                    message = stringResource(R.string.error_no_items, searchQuery),
+                    showRetry = false
+                )
+            }
+            TickerListContent(
+                modifier = Modifier.fillMaxSize(),
+                items = items,
+                secondsFromLastUpdate = secondsFromLastUpdate,
+                enableRefreshing = false,
+                refreshingState = refreshingState,
+                expandedTicker = expandedTicker,
+                listState = listState,
+                tickerPressed = { tickerPressed(it) },
+                onRefreshItems = {
+                    viewModel.refreshTickers()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun TickerListContent(
     modifier: Modifier = Modifier,
     items: List<Ticker> = listOf(),
     secondsFromLastUpdate: Int = 0,
@@ -369,8 +393,8 @@ private fun TickerItem(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 9.dp)
-                    .height(64.dp)
+                    .padding(top = 16.dp)
+                    .height(48.dp)
             ) {
                 Column(
                     modifier = Modifier
@@ -398,6 +422,7 @@ private fun TickerItem(
                             .fillMaxWidth()
                             .clip(CircleShape),
                         progress = currentRatio,
+                        color = if (currentRatio < 0.5f) Red else MaterialTheme.colors.primary,
                         backgroundColor = MaterialTheme.colors.onBackground.copy(0.12f)
                     )
                     Text(
