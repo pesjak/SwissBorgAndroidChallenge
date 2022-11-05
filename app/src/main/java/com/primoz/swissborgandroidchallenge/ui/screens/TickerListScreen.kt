@@ -6,10 +6,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -55,7 +52,7 @@ fun TickerListScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val secondsFromLastUpdate by viewModel.secondsFromLastUpdate.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
-    val tickerListState by viewModel.tickerListState.collectAsState()
+    val tickerResponse by viewModel.tickerListState.collectAsState()
     val currentAppliedFilter by viewModel.currentAppliedFilter.collectAsState()
     val toApplyFilter by viewModel.toApplyFilter.collectAsState()
 
@@ -63,7 +60,7 @@ fun TickerListScreen(
     val refreshingState = rememberSwipeRefreshState(isRefreshing)
     val listState = rememberLazyListState()
 
-    var expandedTicker by remember { mutableStateOf<Ticker?>(null) }
+    var expandedTickerSymbol by remember { mutableStateOf<String?>(null) }
 
     val bottomSheetState = rememberModalBottomSheetState(
         initialValue = ModalBottomSheetValue.Hidden,
@@ -140,22 +137,21 @@ fun TickerListScreen(
 
                 // Content
                 TickerContent(
-                    tickerResponse = tickerListState,
+                    tickerResponse = tickerResponse,
                     secondsFromLastUpdate = secondsFromLastUpdate,
                     refreshingState = refreshingState,
-                    expandedTicker = expandedTicker,
+                    expandedTickerSymbol = expandedTickerSymbol,
                     listState = listState,
                     searchQuery = searchQuery,
                     onTickerPressed = {
-                        expandedTicker = if (expandedTicker == it) null else it
+                        expandedTickerSymbol = if (expandedTickerSymbol == it?.symbol) null else it?.symbol
                     },
                     onRetryPressed = {
                         viewModel.getNewTickerList()
-                    },
-                    onRefresh = {
-                        viewModel.refreshTickers()
                     }
-                )
+                ) {
+                    viewModel.refreshTickers()
+                }
             }
         }
     }
@@ -166,7 +162,7 @@ private fun TickerContent(
     tickerResponse: Response<List<Ticker>> = Response.Loading,
     secondsFromLastUpdate: Int = 0,
     refreshingState: SwipeRefreshState = rememberSwipeRefreshState(isRefreshing = false),
-    expandedTicker: Ticker? = null,
+    expandedTickerSymbol: String? = null,
     listState: LazyListState = rememberLazyListState(),
     searchQuery: String = "",
     onTickerPressed: (Ticker?) -> Unit = {},
@@ -197,9 +193,9 @@ private fun TickerContent(
                     secondsFromLastUpdate = secondsFromLastUpdate,
                     enableRefreshing = true,
                     refreshingState = refreshingState,
-                    expandedTicker = expandedTicker,
+                    expandedTickerSymbol = expandedTickerSymbol,
                     listState = listState,
-                    tickerPressed = { onTickerPressed(it) },
+                    onTickerPressed = { onTickerPressed(it) },
                     onRefresh = onRefresh
                 )
             }
@@ -219,15 +215,16 @@ private fun TickerContent(
                 secondsFromLastUpdate = secondsFromLastUpdate,
                 enableRefreshing = false,
                 refreshingState = refreshingState,
-                expandedTicker = expandedTicker,
+                expandedTickerSymbol = expandedTickerSymbol,
                 listState = listState,
-                tickerPressed = { onTickerPressed(it) },
+                onTickerPressed = { onTickerPressed(it) },
                 onRefresh = onRefresh
             )
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TickerList(
     modifier: Modifier = Modifier,
@@ -236,10 +233,15 @@ fun TickerList(
     enableRefreshing: Boolean = false,
     refreshingState: SwipeRefreshState = rememberSwipeRefreshState(isRefreshing = false),
     listState: LazyListState = rememberLazyListState(),
-    expandedTicker: Ticker? = null,
-    tickerPressed: (Ticker?) -> Unit = {},
+    expandedTickerSymbol: String? = null,
+    onTickerPressed: (Ticker?) -> Unit = {},
     onRefresh: () -> Unit = {},
 ) {
+    LaunchedEffect(items.firstOrNull()) {
+        if(items.isNotEmpty()) {
+            listState.animateScrollToItem(0)
+        }
+    }
     SwipeRefresh(
         modifier = modifier,
         state = refreshingState,
@@ -251,19 +253,24 @@ fun TickerList(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 8.dp),
         ) {
-            items(items) { ticker ->
+            items(items, key = { it.symbol }) { ticker ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .border(
                             border = BorderStroke(1.dp, Color.Black.copy(0.12f)),
                             shape = MaterialTheme.shapes.medium
-                        ),
+                        )
+                        .animateItemPlacement(),
                     elevation = 0.dp,
                     shape = MaterialTheme.shapes.medium
                 ) {
                     TickerItem(
-                        expandedTicker = expandedTicker,
+                        modifier = Modifier
+                            .clickable { onTickerPressed(ticker) }
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp, horizontal = 16.dp),
+                        expandedTickerSymbol = expandedTickerSymbol,
                         icon = ticker.icon,
                         name = ticker.name,
                         formattedLastPrice = ticker.formattedLastPrice,
@@ -273,13 +280,10 @@ fun TickerList(
                         currentRatio = ticker.ratio,
                         formattedLow = ticker.formattedLow,
                         formattedHigh = ticker.formattedHigh,
-                        tickerPressed = {
-                            tickerPressed(ticker)
-                        }
                     )
                 }
             }
-            item {
+            item(key = "footer") {
                 Text(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -287,7 +291,8 @@ fun TickerList(
                         .animateContentSize(
                             animationSpec = tween(durationMillis = 200)
                         )
-                        .background(Color.Transparent),
+                        .background(Color.Transparent)
+                        .animateItemPlacement(),
                     text = if (secondsFromLastUpdate < 2) {
                         stringResource(id = R.string.last_updated_now)
                     } else {
@@ -304,7 +309,7 @@ fun TickerList(
 @Composable
 private fun TickerItem(
     modifier: Modifier = Modifier,
-    expandedTicker: Ticker? = null,
+    expandedTickerSymbol: String? = null,
     icon: Int = R.drawable.ic_btc,
     name: String = "Bitcoin",
     formattedLastPrice: String = "$10.0",
@@ -314,18 +319,12 @@ private fun TickerItem(
     currentRatio: Float = 0.5f,
     formattedHigh: String = "20.0",
     formattedLow: String = "10.0",
-    tickerPressed: () -> Unit = {},
 ) {
     Column(
         modifier = modifier
-            .clickable { // Clickable inside row and not card because ripple isn't clipped and we don't want "Experimental"
-                tickerPressed()
-            }
-            .fillMaxWidth()
-            .padding(vertical = 16.dp, horizontal = 16.dp),
     ) {
         Row(
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -381,7 +380,7 @@ private fun TickerItem(
             )
         }
         AnimatedVisibility(
-            visible = expandedTicker != null && expandedTicker.name == name,
+            visible = expandedTickerSymbol != null && expandedTickerSymbol == symbol,
             enter = enterTransition,
             exit = exitTransition
         ) {

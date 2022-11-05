@@ -133,13 +133,12 @@ class TickerListViewModel @Inject constructor(
     }
 
     private fun filterTickerList(): List<Ticker> {
-        var filteredList = searchTickers(unFilteredList)
-        filteredList = when (currentAppliedFilter.value) {
+        val filteredList = searchTickers(unFilteredList)
+        return when (currentAppliedFilter.value) {
             FilterType.SORT_GAIN -> filteredList.sortedByDescending { it.dailyChangePercentage }
             FilterType.SORT_LOSS -> filteredList.sortedBy { it.dailyChangePercentage }
             else -> filteredList.sortedBy { it.name }
         }
-        return filteredList
     }
 
     private fun searchTickers(tickers: List<Ticker>): List<Ticker> {
