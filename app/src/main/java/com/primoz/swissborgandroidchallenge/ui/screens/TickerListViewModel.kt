@@ -7,11 +7,11 @@ import com.primoz.swissborgandroidchallenge.network.BitFinexClient
 import com.primoz.swissborgandroidchallenge.network.Response
 import com.primoz.swissborgandroidchallenge.network.data.Ticker
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class TickerListViewModel @Inject constructor(
@@ -147,5 +147,4 @@ class TickerListViewModel @Inject constructor(
             it.name.lowercase().contains(searchQuery.value.lowercase()) || it.symbol.lowercase().contains(searchQuery.value.lowercase())
         }
     }
-
 }

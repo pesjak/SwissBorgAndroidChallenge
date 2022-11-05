@@ -13,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
@@ -51,7 +52,6 @@ fun TickerListScreen(
     modifier: Modifier = Modifier,
     viewModel: TickerListViewModel = hiltViewModel()
 ) {
-
     val searchQuery by viewModel.searchQuery.collectAsState()
     val secondsFromLastUpdate by viewModel.secondsFromLastUpdate.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
@@ -82,7 +82,7 @@ fun TickerListScreen(
         }
     }
 
-    // Whenever bottomSheet hides, update bottomSheet UI of which filters are applied
+    // Whenever bottomSheet hides, update bottomSheet UI, so it has current applied filters
     LaunchedEffect(bottomSheetState.currentValue) {
         if (bottomSheetState.currentValue == ModalBottomSheetValue.Hidden) {
             viewModel.selectFilterOption(currentAppliedFilter)
@@ -96,17 +96,15 @@ fun TickerListScreen(
         sheetContent = {
             FiltersBottomSheet(
                 toApplyFilter = toApplyFilter,
-                filterPressed = {
+                onCloseButtonPressed = closeSheet,
+                onFilterPressed = {
                     viewModel.selectFilterOption(it)
                 },
-                closeButtonPressed = {
-                    closeSheet()
-                },
-                applyButtonPressed = {
+                onApplyButtonPressed = {
                     viewModel.applySelectedFilters()
                     closeSheet()
                 },
-                clearAllButtonPressed = {
+                onClearAllButtonPressed = {
                     viewModel.clearFilters()
                     closeSheet()
                 }
@@ -133,7 +131,7 @@ fun TickerListScreen(
                 SortChip(
                     modifier = Modifier.padding(start = 16.dp, top = 8.dp),
                     filter = currentAppliedFilter,
-                    chipPressed = {
+                    onChipPressed = {
                         openSheet()
                     }
                 )
@@ -143,14 +141,19 @@ fun TickerListScreen(
                 // Content
                 TickerContent(
                     tickerResponse = tickerListState,
-                    viewModel = viewModel,
                     secondsFromLastUpdate = secondsFromLastUpdate,
                     refreshingState = refreshingState,
                     expandedTicker = expandedTicker,
                     listState = listState,
                     searchQuery = searchQuery,
-                    tickerPressed = {
+                    onTickerPressed = {
                         expandedTicker = if (expandedTicker == it) null else it
+                    },
+                    onRetryPressed = {
+                        viewModel.getNewTickerList()
+                    },
+                    onRefresh = {
+                        viewModel.refreshTickers()
                     }
                 )
             }
@@ -160,18 +163,22 @@ fun TickerListScreen(
 
 @Composable
 private fun TickerContent(
-    tickerResponse: Response<List<Ticker>>,
-    viewModel: TickerListViewModel,
-    secondsFromLastUpdate: Int,
-    refreshingState: SwipeRefreshState,
-    expandedTicker: Ticker?,
-    listState: LazyListState,
-    searchQuery: String,
-    tickerPressed: (Ticker?) -> Unit = {}
+    tickerResponse: Response<List<Ticker>> = Response.Loading,
+    secondsFromLastUpdate: Int = 0,
+    refreshingState: SwipeRefreshState = rememberSwipeRefreshState(isRefreshing = false),
+    expandedTicker: Ticker? = null,
+    listState: LazyListState = rememberLazyListState(),
+    searchQuery: String = "",
+    onTickerPressed: (Ticker?) -> Unit = {},
+    onRetryPressed: () -> Unit = {},
+    onRefresh: () -> Unit = {},
 ) {
     val context = LocalContext.current
+
     when (tickerResponse) {
-        is Response.Loading -> LoadingScreen()
+        is Response.Loading -> {
+            LoadingScreen()
+        }
         is Response.Error -> {
             LaunchedEffect(tickerResponse.key) { // Key to trigger next time error shows
                 Toast.makeText(
@@ -182,13 +189,9 @@ private fun TickerContent(
             }
             val items = tickerResponse.data
             if (items.isNullOrEmpty()) {
-                ErrorScreen(
-                    onRetryPressed = {
-                        viewModel.getNewTickerList()
-                    },
-                )
+                ErrorScreen(retryPressed = onRetryPressed)
             } else {
-                TickerListContent(
+                TickerList(
                     modifier = Modifier.fillMaxSize(),
                     items = items,
                     secondsFromLastUpdate = secondsFromLastUpdate,
@@ -196,16 +199,13 @@ private fun TickerContent(
                     refreshingState = refreshingState,
                     expandedTicker = expandedTicker,
                     listState = listState,
-                    tickerPressed = { tickerPressed(it) },
-                    onRefreshItems = {
-                        viewModel.refreshTickers()
-                    }
+                    tickerPressed = { onTickerPressed(it) },
+                    onRefresh = onRefresh
                 )
             }
         }
         is Response.Success -> {
             val items = tickerResponse.data
-            // Ticker List
             if (items.isEmpty()) {
                 ErrorScreen(
                     modifier = Modifier.fillMaxSize(),
@@ -213,7 +213,7 @@ private fun TickerContent(
                     showRetry = false
                 )
             }
-            TickerListContent(
+            TickerList(
                 modifier = Modifier.fillMaxSize(),
                 items = items,
                 secondsFromLastUpdate = secondsFromLastUpdate,
@@ -221,42 +221,37 @@ private fun TickerContent(
                 refreshingState = refreshingState,
                 expandedTicker = expandedTicker,
                 listState = listState,
-                tickerPressed = { tickerPressed(it) },
-                onRefreshItems = {
-                    viewModel.refreshTickers()
-                }
+                tickerPressed = { onTickerPressed(it) },
+                onRefresh = onRefresh
             )
         }
     }
 }
 
 @Composable
-fun TickerListContent(
+fun TickerList(
     modifier: Modifier = Modifier,
     items: List<Ticker> = listOf(),
     secondsFromLastUpdate: Int = 0,
-    enableRefreshing: Boolean,
-    refreshingState: SwipeRefreshState,
-    listState: LazyListState,
+    enableRefreshing: Boolean = false,
+    refreshingState: SwipeRefreshState = rememberSwipeRefreshState(isRefreshing = false),
+    listState: LazyListState = rememberLazyListState(),
     expandedTicker: Ticker? = null,
     tickerPressed: (Ticker?) -> Unit = {},
-    onRefreshItems: () -> Unit = {},
+    onRefresh: () -> Unit = {},
 ) {
     SwipeRefresh(
         modifier = modifier,
         state = refreshingState,
         swipeEnabled = enableRefreshing,
-        onRefresh = {
-            onRefreshItems()
-        }
+        onRefresh = onRefresh,
     ) {
         LazyColumn(
             state = listState,
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 8.dp),
         ) {
-            items(items.size) { index ->
-                val ticker = items[index]
+            items(items) { ticker ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -316,10 +311,10 @@ private fun TickerItem(
     formattedDailyChangePercentage: String = "+10.0%",
     dailyChangePercentage: Float = 10.0f,
     symbol: String = "BTC",
+    currentRatio: Float = 0.5f,
+    formattedHigh: String = "20.0",
+    formattedLow: String = "10.0",
     tickerPressed: () -> Unit = {},
-    currentRatio: Float,
-    formattedHigh: String,
-    formattedLow: String,
 ) {
     Column(
         modifier = modifier
@@ -453,7 +448,7 @@ private fun TickerItem(
 fun SortChip(
     modifier: Modifier = Modifier,
     filter: FilterType? = null,
-    chipPressed: () -> Unit = {},
+    onChipPressed: () -> Unit = {},
 ) {
     Surface(
         modifier = modifier.padding(end = 4.dp),
@@ -463,7 +458,7 @@ fun SortChip(
     ) {
         Row(
             modifier = Modifier
-                .clickable { chipPressed() }
+                .clickable { onChipPressed() }
                 .padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
