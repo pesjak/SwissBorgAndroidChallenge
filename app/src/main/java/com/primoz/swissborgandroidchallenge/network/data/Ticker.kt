@@ -7,7 +7,6 @@ data class Ticker(
     private val unformattedSymbol: String,
     val dailyChangePercentage: Float,
     val lastPrice: Float,
-    val volume: Float,
     val high: Float,
     val low: Float,
 ) {
